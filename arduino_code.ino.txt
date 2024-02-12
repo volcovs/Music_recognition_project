@@ -1,0 +1,350 @@
+#include "arduinoFFT.h"
+#include <MatrixKeys.h>
+ 
+#define SAMPLES 128          
+#define SAMPLING_FREQUENCY 660 //Nyquist: frecventa de esantionare trebuie sa fie dublul celei mai mari frecvente asteptate
+#define SAMPLING_FREQUENCY_NOTES 1175
+ 
+#define E2 82.41
+#define A2 110.00
+#define D3 146.83
+#define G3 196.00
+#define B3 246.94
+#define E4 329.63
+
+
+arduinoFFT FFT = arduinoFFT();
+ 
+unsigned int samplingPeriodNotes;
+unsigned int samplingPeriod;
+unsigned long microSeconds;
+unsigned long startTime;
+ 
+double vReal[SAMPLES]; //vector pentru valorile reale
+double vImag[SAMPLES]; //vector pentru valorile imaginare
+
+
+MatrixKeys keys (9, 10, 11, 12, 4, 5, 6, 7, 6); //maparea butoanelor
+
+
+float frq[] = {82.41, 87.31, 92.5, 98.0, 103.83, 110, 116.54, 123.47, 130.81, 138.59, 146.83, 155.56, 164.81, 174.61, 185, 196, 207.65, 220, 233.08, 246.94, 261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392, 415.3, 440, 466.16, 493.88, 523.25, 554.37, 587.33};
+boolean tuned;
+boolean mode1;
+boolean mode2;
+
+
+#define verde 8
+#define rosu 13
+#define galben 2
+
+
+void setup()
+{
+    pinMode(verde, OUTPUT);
+    pinMode(rosu, OUTPUT);
+    pinMode(galben, OUTPUT);
+
+
+    samplingPeriod = round(1000000*(1.0/SAMPLING_FREQUENCY));
+    samplingPeriodNotes = round(1000000*(1.0/SAMPLING_FREQUENCY_NOTES));
+
+
+    Serial.begin(115200);
+    //dispozitivul este oprit
+    mode1 = false;
+    mode2 = false;
+}
+ 
+void loop()
+{  
+    keys.scanState();
+
+
+    if(keys.flagClick[0][0] == true) {
+      keys.flagClick[0][0] = false;
+      //este activ modul1 -> acordare
+      mode1 = true;
+      mode2 = false;
+    }
+   
+   if(keys.flagClick[0][1] == true) {
+      keys.flagClick[0][1] = false;
+      //este activ modul2 -> recunoasterea notelor
+      mode1 = false;
+      mode2 = true;
+    }
+
+
+    if (mode1 == true) {
+      for(int i = 1; i<4; i++) {
+        for(int j = 0; j<4; j++) {
+          if(keys.flagClick[i][j] == true) {
+           keys.flagClick[i][j] = false;
+              if (i == 1 && j == 0) {
+                //Selectata prima struna
+                tuned = false;
+                 while(!tuned) {
+                    double current_freq = function();
+                    if(abs(current_freq - E4) <= 0.5) {
+                    tuned = true;
+                    Serial.println("Acordata");
+                    digitalWrite(verde, HIGH);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, LOW);
+                   }
+                    else if (current_freq > E4) {
+                    Serial.println("Prea sus");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, HIGH);
+                    digitalWrite(galben, LOW);
+                    }
+                    else {
+                    Serial.println("Prea jos");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, HIGH);
+                  }
+                }
+              }
+              else if(i == 1 && j == 1) {
+                //Selectata a doua struna
+                tuned = false;
+                while(!tuned) {
+                  double current_freq = function();
+                  if(abs(current_freq - B3) <= 0.5) {
+                  tuned = true;
+                  Serial.println("Acordata");
+                  digitalWrite(verde, HIGH);
+                  digitalWrite(rosu, LOW);
+                  digitalWrite(galben, LOW);
+                  }
+                 else if (current_freq > B3) {
+                  Serial.println("Prea sus");
+                  digitalWrite(verde, LOW);
+                  digitalWrite(rosu, HIGH);
+                  digitalWrite(galben, LOW);
+                  }
+                  else {
+                    Serial.println("Prea jos");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben,HIGH);
+                 }
+                }
+              }
+              else if (i == 1 && j == 1) {
+                //Selectata a treia struna
+                tuned = false;
+                while(!tuned) {
+                  double current_freq = function();
+                  if(abs(current_freq - G3) <= 0.5) {
+                    tuned = true;
+                    Serial.println("Acordata");
+                    digitalWrite(verde, HIGH);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, LOW);
+                   }
+                  else if (current_freq > G3) {
+                    Serial.println("Prea sus");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, HIGH);
+                    digitalWrite(galben, LOW);
+                  }
+                  else {
+                    Serial.println("Prea jos");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, HIGH);
+                  }
+                }
+              }
+              else if(i == 1 && j == 3) {
+                //Selectata a patra struna
+                tuned = false;
+                while(!tuned) {
+                  double current_freq = function();
+                  if(abs(current_freq - D3) <= 0.5) {
+                    tuned = true;
+                    Serial.println("Acordata");
+                    digitalWrite(verde, HIGH);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, LOW);
+                  }
+                  else if (current_freq > D3) {
+                    Serial.println("Prea sus");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, HIGH);
+                    digitalWrite(galben, LOW);
+                  }
+                  else {
+                    Serial.println("Prea jos");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, HIGH);
+                  }
+                }
+              }
+              else if(i == 2 && j == 0) {
+                //Selectata a cincea struna
+                tuned = false;
+                while(!tuned) {
+                  double current_freq = function();
+                  if(abs(current_freq - A2) <= 0.5) {
+                    tuned = true;
+                    Serial.println("Acordata");
+                    digitalWrite(verde, HIGH);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, LOW);
+                  }
+                 else if (current_freq > A2) {
+                    Serial.println("Prea sus");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, HIGH);
+                    digitalWrite(galben, LOW);
+                  }
+                  else {
+                    Serial.println("Prea jos");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, HIGH);
+                  }
+                }
+              }
+              else if (i == 2 && j == 1) {
+                //Selectata a sasea struna
+                  tuned = false;
+                  while(!tuned) {
+                    double current_freq = function();
+                    if(abs(current_freq - E2) <= 0.5) {
+                      tuned = true;
+                      Serial.println("Acordata");
+                      digitalWrite(verde, HIGH);
+                      digitalWrite(rosu, LOW);
+                      digitalWrite(galben, LOW);
+                   }
+                    else if (current_freq > E2) {
+                    Serial.println("Prea sus");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, HIGH);
+                    digitalWrite(galben, LOW);
+                    }
+                   else {
+                    Serial.println("Prea jos");
+                    digitalWrite(verde, LOW);
+                    digitalWrite(rosu, LOW);
+                    digitalWrite(galben, HIGH);
+                  }
+                }
+              }
+
+
+                if(keys.flagClick[0][3] == true || keys.flagPress[0][3] == true) {
+                  keys.flagPress[0][3] = false;
+                  keys.flagClick[0][3] = false;
+                  mode1 = false;
+                  mode2 = false;
+                  Serial.println("Off");
+                }
+
+
+               delay(500);
+               digitalWrite(verde, LOW);
+            }
+          }
+        }
+      }
+
+
+    if (mode2 == true) {
+      startTime = millis();
+      while (millis() - startTime <= 15000) {
+        double peak = function2();
+        int note = find(peak, frq);
+
+
+        if(note != -1) {
+          Serial.print(frq[note]);
+          Serial.print(" ");
+          Serial.println(note);
+        }
+      }  
+      delay(500);
+      Serial.println("*");
+
+
+      exit(0);
+  }
+}
+
+
+int find(double note_frq, float frq[]) {
+  for (int i = 0; i < 35; i++) {
+    if (abs(frq[i] - note_frq) <= 5) {
+        return i;
+    }
+  }
+
+
+  return -1;
+}
+
+
+double function() {
+    for(int i=0; i<SAMPLES; i++)
+    {
+        microSeconds = micros();  
+     
+        //Se citesc valorile reale de pe pinul A0
+        vReal[i] = analogRead(0);
+        vImag[i] = 0;
+
+
+        while(micros() < (microSeconds + samplingPeriod))
+        {
+          //nimic
+        }
+    }
+ 
+    /*Perform FFT on samples*/
+    FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
+    FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
+
+
+    double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);
+    //Serial.println(peak);
+
+
+    return peak;
+}
+
+
+double function2() {
+    for(int i=0; i<SAMPLES; i++)
+    {
+        microSeconds = micros();  
+     
+        //Se citesc valorile reale de pe pinul A0
+        vReal[i] = analogRead(0);
+        vImag[i] = 0;
+
+
+        while(micros() < (microSeconds + samplingPeriodNotes))
+        {
+          //nimic
+        }
+    }
+ 
+    /*Perform FFT on samples*/
+    FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
+    FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
+
+
+    double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY_NOTES);
+    //Serial.println(peak);
+
+
+    return peak;
+}
+
